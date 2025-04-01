@@ -28,7 +28,7 @@ app.post('/search', async (req, res) => {
   	return data.results.some(podcast =>
 		podcast.collectionName.trim().toLowerCase() === target
   	);
-    }
+    },
     Spotify: async () => {
       const url = `https://open.spotify.com/search/${encodeURIComponent(podcastName)}`;
       const response = await fetch(url);
