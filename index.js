@@ -1,3 +1,9 @@
+const express = require('express');
+const cors = require('cors');
+const puppeteer = require('puppeteer');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+// Spotify token management
 let spotifyToken = null;
 let tokenExpiry = 0;
 
@@ -21,20 +27,19 @@ async function getSpotifyToken() {
 
   const data = await response.json();
   spotifyToken = data.access_token;
-  tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // 1 min safety window
+  tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000;
 
   return spotifyToken;
 }
 
-
-const express = require('express');
-const cors = require('cors');
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
-
+// Express app setup
 const app = express();
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
+
 const PORT = process.env.PORT || 3000;
+
+// Search endpoint
 app.post('/search', async (req, res) => {
   const { podcastName } = req.body;
 
@@ -44,19 +49,16 @@ app.post('/search', async (req, res) => {
 
   const results = {};
 
-  // Define the search strategies
+  // Define search logic for each platform
   const platforms = {
     Apple: async () => {
-	const url = `https://itunes.apple.com/search?term=${encodeURIComponent(podcastName)}&entity=podcast&limit=10`;
-	const response = await fetch(url);
-	const data = await response.json();
-
-	// Normalize both for comparison
-  	const target = podcastName.trim().toLowerCase();
-
-  	return data.results.some(podcast =>
-		podcast.collectionName.trim().toLowerCase() === target
-  	);
+      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(podcastName)}&entity=podcast&limit=10`;
+      const response = await fetch(url);
+      const data = await response.json();
+      const target = podcastName.trim().toLowerCase();
+      return data.results.some(p =>
+        p.collectionName.trim().toLowerCase() === target
+      );
     },
     Spotify: async () => {
       const token = await getSpotifyToken();
@@ -66,32 +68,49 @@ app.post('/search', async (req, res) => {
         }
       });
       const data = await response.json();
-
       return data.shows.items.some(show =>
         show.name.toLowerCase() === podcastName.toLowerCase()
       );
     },
     Stitcher: async () => {
+      const browser = await puppeteer.launch({ headless: 'new' });
+      const page = await browser.newPage();
       const url = `https://www.stitcher.com/search?query=${encodeURIComponent(podcastName)}`;
-      const response = await fetch(url);
-      const text = await response.text();
-      return text.toLowerCase().includes(podcastName.toLowerCase());
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+      await browser.close();
+      return pageText.includes(podcastName.toLowerCase());
     },
     Podbean: async () => {
+      const browser = await puppeteer.launch({ headless: 'new' });
+      const page = await browser.newPage();
       const url = `https://www.podbean.com/search?q=${encodeURIComponent(podcastName)}`;
-      const response = await fetch(url);
-      const text = await response.text();
-      return text.toLowerCase().includes(podcastName.toLowerCase());
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+      await browser.close();
+      return pageText.includes(podcastName.toLowerCase());
     },
     Google: async () => {
+      const browser = await puppeteer.launch({ headless: 'new' });
+      const page = await browser.newPage();
       const url = `https://podcasts.google.com/search/${encodeURIComponent(podcastName)}`;
-      const response = await fetch(url);
-      const text = await response.text();
-      return text.toLowerCase().includes(podcastName.toLowerCase());
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+      await browser.close();
+      return pageText.includes(podcastName.toLowerCase());
+    },
+    Audible: async () => {
+      const browser = await puppeteer.launch({ headless: 'new' });
+      const page = await browser.newPage();
+      const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+      await browser.close();
+      return pageText.includes(podcastName.toLowerCase());
     }
   };
 
-  // Execute each search independently
+  // Run all searches
   for (const [platform, searchFunction] of Object.entries(platforms)) {
     try {
       results[platform] = await searchFunction();
@@ -104,7 +123,7 @@ app.post('/search', async (req, res) => {
   res.json(results);
 });
 
-
+// Start the server
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
