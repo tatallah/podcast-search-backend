@@ -1,9 +1,10 @@
 const express = require('express');
+const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
-
+app.use(cors());
 const PORT = process.env.PORT || 3000;
 
 app.post('/search', async (req, res) => {
