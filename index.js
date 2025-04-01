@@ -18,13 +18,17 @@ app.post('/search', async (req, res) => {
   // Define the search strategies
   const platforms = {
     Apple: async () => {
-      const url = `https://itunes.apple.com/search?term=${encodeURIComponent(podcastName)}&entity=podcast`;
-      const response = await fetch(url);
-      const data = await response.json();
-      return data.results.some(p =>
-        p.collectionName.toLowerCase().includes(podcastName.toLowerCase())
-      );
-    },
+	const url = `https://itunes.apple.com/search?term=${encodeURIComponent(podcastName)}&entity=podcast&limit=10`;
+	const response = await fetch(url);
+	const data = await response.json();
+
+	// Normalize both for comparison
+  	const target = podcastName.trim().toLowerCase();
+
+  	return data.results.some(podcast =>
+		podcast.collectionName.trim().toLowerCase() === target
+  	);
+    }
     Spotify: async () => {
       const url = `https://open.spotify.com/search/${encodeURIComponent(podcastName)}`;
       const response = await fetch(url);
