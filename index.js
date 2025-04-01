@@ -1,3 +1,32 @@
+let spotifyToken = null;
+let tokenExpiry = 0;
+
+async function getSpotifyToken() {
+  if (spotifyToken && Date.now() < tokenExpiry) {
+    return spotifyToken;
+  }
+
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: 'grant_type=client_credentials'
+  });
+
+  const data = await response.json();
+  spotifyToken = data.access_token;
+  tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // 1 min safety window
+
+  return spotifyToken;
+}
+
+
 const express = require('express');
 const cors = require('cors');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
@@ -30,10 +59,17 @@ app.post('/search', async (req, res) => {
   	);
     },
     Spotify: async () => {
-      const url = `https://open.spotify.com/search/${encodeURIComponent(podcastName)}`;
-      const response = await fetch(url);
-      const text = await response.text();
-      return text.toLowerCase().includes(podcastName.toLowerCase());
+      const token = await getSpotifyToken();
+      const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(podcastName)}&type=show&limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+
+      return data.shows.items.some(show =>
+        show.name.toLowerCase() === podcastName.toLowerCase()
+      );
     },
     Stitcher: async () => {
       const url = `https://www.stitcher.com/search?query=${encodeURIComponent(podcastName)}`;
