@@ -71,37 +71,41 @@ app.post('/search', async (req, res) => {
     },
 
     YouTube: async () => {
-      const apiKey = process.env.YOUTUBE_API_KEY;
-      const query = podcastName;
+      try {
+        const apiKey = process.env.YOUTUBE_API_KEY;
+        const query = podcastName;
 
-      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`;
-      const response = await fetch(url);
-      const data = await response.json();
+        const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-      const items = data?.items ?? [];
+        console.log("📦 YouTube API raw response:", JSON.stringify(data, null, 2));
 
-      if (!items.length) {
-        console.log("❌ YouTube API returned no usable items.");
+        const items = data?.items ?? [];
+
+        if (!items.length) {
+          console.log("❌ YouTube API returned no usable items.");
+          return false;
+        }
+
+        const matches = items.some(item => {
+          const title = item.snippet?.title || '';
+          const description = item.snippet?.description || '';
+          const channelTitle = item.snippet?.channelTitle || '';
+
+          return (
+            isFuzzyMatch(title, podcastName) ||
+            isFuzzyMatch(description, podcastName) ||
+            isFuzzyMatch(channelTitle, podcastName)
+          );
+        });
+
+        console.log(`✅ YouTube fuzzy match result: ${matches}`);
+        return matches;
+      } catch (err) {
+        console.error("🔥 YouTube search error:", err.message);
         return false;
       }
-
-      data.items.forEach(item => {
-        console.log("👉 Title:", item.snippet.title);
-        console.log("👉 Channel:", item.snippet.channelTitle);
-        console.log("👉 Description:", item.snippet.description);
-      });
-
-      return data.items.some(item => {
-        const title = item.snippet?.title || '';
-        const description = item.snippet?.description || '';
-        const channelTitle = item.snippet?.channelTitle || '';
-
-        return (
-          isFuzzyMatch(title, podcastName) ||
-          isFuzzyMatch(description, podcastName) ||
-          isFuzzyMatch(channelTitle, podcastName)
-        );
-      });
     },
 
     Audible: async () => {
