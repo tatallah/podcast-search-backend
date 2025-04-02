@@ -81,6 +81,9 @@
   "scripts": {
     "start": "node index.js"
   },
+  "puppeteer": {
+  "skipChromiumDownload": true
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tatallah/podcast-search-backend.git"
