@@ -53,10 +53,16 @@ app.post('/search', async (req, res) => {
         .filter(p => isFuzzyMatch(p.collectionName, podcastName))
         .slice(0, 3)
         .map(p => ({
-          title: p.collectionName,
-          url: p.collectionViewUrl,
-          description: p.description || p.collectionArtistName || "No description available."
-        }));
+            title: p.collectionName,
+            url: p.collectionViewUrl,
+            description:
+              p.description ||                  // rarely present
+              p.artistName ||                  // fallback
+              p.collectionArtistName ||        // fallback
+              `Feed: ${p.feedUrl}` ||          // optional link
+              "No description available."
+        }))
+        ;
     },
 
     Spotify: async () => {
