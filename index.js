@@ -75,7 +75,7 @@ app.post('/search', async (req, res) => {
     Stitcher: async () => {
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: '/usr/bin/google-chrome-stable',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
@@ -88,7 +88,7 @@ app.post('/search', async (req, res) => {
     Podbean: async () => {
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: '/usr/bin/google-chrome-stable',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
@@ -101,7 +101,7 @@ app.post('/search', async (req, res) => {
     Google: async () => {
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: '/usr/bin/google-chrome-stable',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
@@ -114,7 +114,7 @@ app.post('/search', async (req, res) => {
     Audible: async () => {
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/usr/bin/chromium-browser',
+        executablePath: '/usr/bin/google-chrome-stable',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
