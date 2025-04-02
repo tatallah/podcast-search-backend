@@ -73,7 +73,11 @@ app.post('/search', async (req, res) => {
       );
     },
     Stitcher: async () => {
-      const browser = await puppeteer.launch({ headless: 'new' });
+      const browser = await puppeteer.launch({
+        headless: 'new',
+        executablePath: '/usr/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
       const page = await browser.newPage();
       const url = `https://www.stitcher.com/search?query=${encodeURIComponent(podcastName)}`;
       await page.goto(url, { waitUntil: 'networkidle2' });
@@ -82,7 +86,11 @@ app.post('/search', async (req, res) => {
       return pageText.includes(podcastName.toLowerCase());
     },
     Podbean: async () => {
-      const browser = await puppeteer.launch({ headless: 'new' });
+      const browser = await puppeteer.launch({
+        headless: 'new',
+        executablePath: '/usr/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
       const page = await browser.newPage();
       const url = `https://www.podbean.com/search?q=${encodeURIComponent(podcastName)}`;
       await page.goto(url, { waitUntil: 'networkidle2' });
@@ -91,7 +99,11 @@ app.post('/search', async (req, res) => {
       return pageText.includes(podcastName.toLowerCase());
     },
     Google: async () => {
-      const browser = await puppeteer.launch({ headless: 'new' });
+      const browser = await puppeteer.launch({
+        headless: 'new',
+        executablePath: '/usr/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
       const page = await browser.newPage();
       const url = `https://podcasts.google.com/search/${encodeURIComponent(podcastName)}`;
       await page.goto(url, { waitUntil: 'networkidle2' });
@@ -100,7 +112,11 @@ app.post('/search', async (req, res) => {
       return pageText.includes(podcastName.toLowerCase());
     },
     Audible: async () => {
-      const browser = await puppeteer.launch({ headless: 'new' });
+      const browser = await puppeteer.launch({
+        headless: 'new',
+        executablePath: '/usr/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
       const page = await browser.newPage();
       const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
       await page.goto(url, { waitUntil: 'networkidle2' });
