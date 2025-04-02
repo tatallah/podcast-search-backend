@@ -78,11 +78,15 @@ app.post('/search', async (req, res) => {
         const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`;
         const response = await fetch(url);
         const data = await response.json();
+        if (data.error) {
+            console.error("🛑 YouTube API error:", data.error);
+        }
 
         console.log("📦 YouTube API raw response:", JSON.stringify(data, null, 2));
 
         const items = data?.items ?? [];
-
+        console.log(`📦 YouTube 'items' content:`, items.map(i => i.snippet?.title));
+        console.log("🛰️ Fetched YouTube URL:", url);
         if (!items.length) {
           console.log("❌ YouTube API returned no usable items.");
           return false;
