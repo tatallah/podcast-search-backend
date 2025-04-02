@@ -70,34 +70,28 @@ app.post('/search', async (req, res) => {
       );
     },
 
-    Google: async () => {
-      const apiKey = process.env.GOOGLE_API_KEY;
-      const cx = process.env.GOOGLE_CSE_ID;
-      const query = `${podcastName} site:podcasts.google.com`;
+    YouTube: async () => {
+      const apiKey = process.env.YOUTUBE_API_KEY;
+      const query = podcastName;
 
-      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${apiKey}&cx=${cx}`;
+      const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&q=${encodeURIComponent(query)}&maxResults=10&key=${apiKey}`;
       const response = await fetch(url);
       const data = await response.json();
 
-      // Log the whole response for debugging
-      console.log("Google API response:", JSON.stringify(data, null, 2));
-
-      const items = Array.isArray(data.items) ? data.items : [];
-
-      if (!items.length) {
-        console.log("❌ No items found in Google API response.");
+      if (!data.items || !Array.isArray(data.items)) {
+        console.log("❌ YouTube API returned no items.");
         return false;
       }
 
-      return items.some(item => {
-        const title = item.title || '';
-        const snippet = item.snippet || '';
-        const link = item.link || '';
+      return data.items.some(item => {
+        const title = item.snippet?.title || '';
+        const description = item.snippet?.description || '';
+        const channelTitle = item.snippet?.channelTitle || '';
 
         return (
           isFuzzyMatch(title, podcastName) ||
-          isFuzzyMatch(snippet, podcastName) ||
-          isFuzzyMatch(link, podcastName)
+          isFuzzyMatch(description, podcastName) ||
+          isFuzzyMatch(channelTitle, podcastName)
         );
       });
     },
