@@ -1,5 +1,8 @@
 // podcast-search/index.js
-
+const stringSimilarity = require('string-similarity');
+function isFuzzyMatch(a, b) {
+  return stringSimilarity.compareTwoStrings(a.toLowerCase(), b.toLowerCase()) > 0.7;
+}
 const express = require('express');
 const cors = require('cors');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
@@ -52,7 +55,7 @@ app.post('/search', async (req, res) => {
       const response = await fetch(url);
       const data = await response.json();
       const target = podcastName.trim().toLowerCase();
-      return data.results.some(p => p.collectionName.trim().toLowerCase() === target);
+      return data.results.some(p => isFuzzyMatch(p.collectionName, podcastName));
     },
     Spotify: async () => {
       const token = await getSpotifyToken();
@@ -62,28 +65,37 @@ app.post('/search', async (req, res) => {
         }
       });
       const data = await response.json();
-      return data.shows.items.some(show => show.name.toLowerCase() === podcastName.toLowerCase());
+      return data.shows.items.some(show =>
+        isFuzzyMatch(show.name, podcastName)
+      );
     },
-    Google: async () => {
+  Google: async () => {
       const apiKey = process.env.GOOGLE_API_KEY;
       const cx = process.env.GOOGLE_CSE_ID;
-      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(podcastName)}&cx=${cx}&key=${apiKey}`;
+      const query = `${podcastName} site:podcasts.google.com`;
 
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        return data.items?.some(item => item.link.includes('podcasts.google.com')) || false;
-      } catch (err) {
-        console.error('Google CSE error:', err.message);
-        return false;
-      }
+      const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${apiKey}&cx=${cx}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!data.items || !Array.isArray(data.items)) return false;
+
+      return data.items.some(item =>
+        isFuzzyMatch(item.title || '', podcastName) ||
+        isFuzzyMatch(item.snippet || '', podcastName) ||
+        isFuzzyMatch(item.link || '', podcastName)
+      );
     },
+
     Audible: async () => {
       try {
         const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
         const response = await fetch(url);
         const text = await response.text();
-        return text.toLowerCase().includes(podcastName.toLowerCase());
+        const titleMatch = html.match(/<h3.*?>(.*?)<\/h3>/gi) || [];
+        return titleMatch.some(title =>
+                isFuzzyMatch(title, podcastName)
+        );
       } catch (err) {
         console.error('Audible search error:', err.message);
         return false;
