@@ -1,7 +1,7 @@
 // podcast-search/index.js
 const stringSimilarity = require('string-similarity');
 function isFuzzyMatch(a, b) {
-  return stringSimilarity.compareTwoStrings(a.toLowerCase(), b.toLowerCase()) > 0.7;
+  return stringSimilarity.compareTwoStrings(a.toLowerCase(), b.toLowerCase()) >= 0.5;
 }
 const express = require('express');
 const cors = require('cors');
@@ -82,6 +82,12 @@ app.post('/search', async (req, res) => {
         console.log("❌ YouTube API returned no items.");
         return false;
       }
+    
+      data.items.forEach(item => {
+        console.log("👉 Title:", item.snippet.title);
+        console.log("👉 Channel:", item.snippet.channelTitle);
+        console.log("👉 Description:", item.snippet.description);
+      });
 
       return data.items.some(item => {
         const title = item.snippet?.title || '';
