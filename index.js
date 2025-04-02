@@ -69,7 +69,8 @@ app.post('/search', async (req, res) => {
         isFuzzyMatch(show.name, podcastName)
       );
     },
-  Google: async () => {
+
+    Google: async () => {
       const apiKey = process.env.GOOGLE_API_KEY;
       const cx = process.env.GOOGLE_CSE_ID;
       const query = `${podcastName} site:podcasts.google.com`;
@@ -78,28 +79,41 @@ app.post('/search', async (req, res) => {
       const response = await fetch(url);
       const data = await response.json();
 
-      if (!data.items || !Array.isArray(data.items)) return false;
+      if (!data.items || !Array.isArray(data.items)) {
+        console.log("❌ No items returned from Google API");
+        return false;
+      }
 
-      return data.items.some(item =>
-        isFuzzyMatch(item.title || '', podcastName) ||
-        isFuzzyMatch(item.snippet || '', podcastName) ||
-        isFuzzyMatch(item.link || '', podcastName)
-      );
+      // Optional: log titles for debugging
+      // console.log("Google titles:", data.items.map(i => i.title));
+
+      return data.items.some(item => {
+        const title = item.title || '';
+        const snippet = item.snippet || '';
+        const link = item.link || '';
+
+        return (
+          isFuzzyMatch(title, podcastName) ||
+          isFuzzyMatch(snippet, podcastName) ||
+          isFuzzyMatch(link, podcastName)
+        );
+      });
     },
 
     Audible: async () => {
-      try {
-        const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
-        const response = await fetch(url);
-        const text = await response.text();
-        const titleMatch = html.match(/<h3.*?>(.*?)<\/h3>/gi) || [];
-        return titleMatch.some(title =>
-                isFuzzyMatch(title, podcastName)
-        );
-      } catch (err) {
-        console.error('Audible search error:', err.message);
-        return false;
-      }
+      const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
+      const response = await fetch(url);
+      const html = await response.text(); // 👈 make sure this line is present
+
+      // Extract all <h3> title blocks
+      const titleMatch = html.match(/<h3.*?>(.*?)<\/h3>/gi) || [];
+
+      // Remove HTML tags and trim
+      const clean = (str) => str.replace(/<[^>]+>/g, '').trim();
+
+      return titleMatch.some(title =>
+        isFuzzyMatch(clean(title), podcastName)
+      );
     }
   };
 
