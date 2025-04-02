@@ -78,11 +78,13 @@ app.post('/search', async (req, res) => {
       const response = await fetch(url);
       const data = await response.json();
 
-      if (!data.items || !Array.isArray(data.items)) {
-        console.log("❌ YouTube API returned no items.");
+      const items = data?.items ?? [];
+
+      if (!items.length) {
+        console.log("❌ YouTube API returned no usable items.");
         return false;
       }
-    
+
       data.items.forEach(item => {
         console.log("👉 Title:", item.snippet.title);
         console.log("👉 Channel:", item.snippet.channelTitle);
