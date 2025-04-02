@@ -85,8 +85,8 @@ app.post('/search', async (req, res) => {
         console.log("📦 YouTube API raw response:", JSON.stringify(data, null, 2));
 
         const items = data?.items ?? [];
-        console.log(`📦 YouTube 'items' content:`, items.map(i => i.snippet?.title));
-        console.log("🛰️ Fetched YouTube URL:", url);
+        // console.log(`📦 YouTube 'items' content:`, items.map(i => i.snippet?.title));
+        // console.log("🛰️ Fetched YouTube URL:", url);
         if (!items.length) {
           console.log("❌ YouTube API returned no usable items.");
           return false;
@@ -113,20 +113,29 @@ app.post('/search', async (req, res) => {
     },
 
     Audible: async () => {
-      const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
-      const response = await fetch(url);
-      const html = await response.text(); // 👈 make sure this line is present
+      try {
+        const url = `https://www.audible.com/search?keywords=${encodeURIComponent(podcastName)}&searchType=podcast`;
+        const response = await fetch(url);
+        const html = await response.text();
 
-      // Extract all <h3> title blocks
-      const titleMatch = html.match(/<h3.*?>(.*?)<\/h3>/gi) || [];
+        // Extract possible podcast blocks (titles appear in data-qa or <a> tags)
+        const titleMatch = html.match(/<a[^>]*>(.*?)<\/a>/gi) || [];
 
-      // Remove HTML tags and trim
-      const clean = (str) => str.replace(/<[^>]+>/g, '').trim();
+        // Remove HTML tags and trim
+        const clean = (str) => str.replace(/<[^>]+>/g, '').trim();
 
-      return titleMatch.some(title =>
-        isFuzzyMatch(clean(title), podcastName)
-      );
+        const matches = titleMatch.some(title =>
+          isFuzzyMatch(clean(title), podcastName)
+        );
+        console.log("🎧 Audible titles:", titleMatch.map(clean));
+        console.log(`🔍 Audible matches: ${matches}`);
+        return matches;
+      } catch (err) {
+        console.error("❌ Audible search error:", err.message);
+        return false;
+      }
     }
+
   };
 
   for (const [platform, searchFunction] of Object.entries(platforms)) {
