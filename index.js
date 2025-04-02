@@ -79,15 +79,17 @@ app.post('/search', async (req, res) => {
       const response = await fetch(url);
       const data = await response.json();
 
-      if (!data.items || !Array.isArray(data.items)) {
-        console.log("❌ No items returned from Google API");
+      // Log the whole response for debugging
+      console.log("Google API response:", JSON.stringify(data, null, 2));
+
+      const items = Array.isArray(data.items) ? data.items : [];
+
+      if (!items.length) {
+        console.log("❌ No items found in Google API response.");
         return false;
       }
 
-      // Optional: log titles for debugging
-      // console.log("Google titles:", data.items.map(i => i.title));
-
-      return data.items.some(item => {
+      return items.some(item => {
         const title = item.title || '';
         const snippet = item.snippet || '';
         const link = item.link || '';
